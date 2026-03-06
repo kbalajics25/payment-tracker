@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Payment Tracker{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>💰 Payment Tracker</h2>
+            <p>Create your account</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('register') }}" class="auth-form" id="registerForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required 
+                       placeholder="Choose a username (3-20 characters)" 
+                       minlength="3" maxlength="20" autocomplete="username">
+                <small class="form-text">Letters, numbers, and underscores only</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required 
+                       placeholder="Create a strong password" 
+                       minlength="8" autocomplete="new-password">
+                <small class="form-text">Minimum 8 characters, with uppercase, lowercase, and number</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required 
+                       placeholder="Re-enter your password" autocomplete="new-password">
+            </div>
+            
+            <div id="passwordStrength" class="password-strength"></div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Register</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+{% endblock %}

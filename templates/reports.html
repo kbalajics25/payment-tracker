@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Payment Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chart-card h3 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.export-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.export-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+@media (max-width: 768px) {
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .export-options {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-container">
+    <div class="page-header">
+        <h1>Reports & Analytics</h1>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <h3>Current Balance</h3>
+            <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.current_balance) }}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Credit</h3>
+            <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.total_credit) }}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Total Debit</h3>
+            <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.total_debit) }}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Savings Rate</h3>
+            <p class="card-value">
+                {% if stats.total_credit > 0 %}
+                {{ "{:.1f}".format(((stats.total_credit - stats.total_debit) / stats.total_credit * 100)) }}%
+                {% else %}
+                0%
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3>Credit vs Debit</h3>
+            <div class="chart-container">
+                <canvas id="creditVsDebitChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Category Spending</h3>
+            <div class="chart-container">
+                <canvas id="categorySpendingChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Daily Spending (Last 30 Days)</h3>
+            <div class="chart-container">
+                <canvas id="dailySpendingChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Weekly Spending (Last 12 Weeks)</h3>
+            <div class="chart-container">
+                <canvas id="weeklySpendingChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Monthly Trend (Last 12 Months)</h3>
+            <div class="chart-container">
+                <canvas id="monthlySpendingChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <h3>Balance Trend</h3>
+            <div class="chart-container">
+                <canvas id="balanceTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Section -->
+    <div class="export-section">
+        <h2>📥 Export Data</h2>
+        <form method="GET" id="exportForm">
+            <div class="export-options">
+                <div class="form-group">
+                    <label>Export Range</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="range" value="all" checked>
+                            <span>All Transactions</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="range" value="current_month">
+                            <span>Current Month</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="range" value="last_3_months">
+                            <span>Last 3 Months</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="range" value="custom" id="customRange">
+                            <span>Custom Date Range</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="customDateRange" style="display: none;">
+                    <label>Custom Date Range</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" name="date_from" placeholder="From">
+                        <input type="date" name="date_to" placeholder="To">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="export-buttons">
+                <button type="button" class="btn btn-success" onclick="exportData('excel')">
+                    📊 Export to Excel
+                </button>
+                <button type="button" class="btn btn-danger" onclick="exportData('pdf')">
+                    📄 Export to PDF
+                </button>
+                <button type="button" class="btn btn-info" onclick="exportData('csv')">
+                    📋 Export to CSV
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='lib/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+// Show/hide custom date range
+document.getElementById('customRange').addEventListener('change', function() {
+    document.getElementById('customDateRange').style.display = this.checked ? 'block' : 'none';
+});
+
+document.querySelectorAll('input[name="range"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value !== 'custom') {
+            document.getElementById('customDateRange').style.display = 'none';
+        }
+    });
+});
+
+function exportData(format) {
+    const form = document.getElementById('exportForm');
+    const formData = new FormData(form);
+    const params = new URLSearchParams(formData);
+    
+    window.location.href = `{{ url_for('export_data', format='FORMAT') }}?${params}`.replace('FORMAT', format);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Payment Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Dashboard</h1>
+        <button class="btn btn-primary" onclick="openAddTransactionModal()">+ Add Transaction</button>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="summary-card card-balance">
+            <div class="card-icon">💰</div>
+            <div class="card-content">
+                <h3>Current Balance</h3>
+                <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.current_balance) }}</p>
+            </div>
+        </div>
+        
+        <div class="summary-card card-credit">
+            <div class="card-icon">📈</div>
+            <div class="card-content">
+                <h3>Total Credit</h3>
+                <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.total_credit) }}</p>
+                <small>This Month: {{ currency }} {{ "{:,.2f}".format(stats.month_credit) }}</small>
+            </div>
+        </div>
+        
+        <div class="summary-card card-debit">
+            <div class="card-icon">📉</div>
+            <div class="card-content">
+                <h3>Total Debit</h3>
+                <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.total_debit) }}</p>
+                <small>This Month: {{ currency }} {{ "{:,.2f}".format(stats.month_debit) }}</small>
+            </div>
+        </div>
+        
+        <div class="summary-card card-today">
+            <div class="card-icon">📊</div>
+            <div class="card-content">
+                <h3>Today's Expense</h3>
+                <p class="card-value">{{ currency }} {{ "{:,.2f}".format(stats.today_expense) }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="btn btn-success" onclick="openAddTransactionModal('credit')">+ Add Credit</button>
+        <button class="btn btn-danger" onclick="openAddTransactionModal('debit')">- Add Debit</button>
+        <a href="{{ url_for('reports') }}" class="btn btn-info">📊 View Reports</a>
+        <a href="{{ url_for('transactions_page') }}" class="btn btn-secondary">📋 All Transactions</a>
+    </div>
+    
+    <!-- Recent Transactions -->
+    <div class="recent-transactions">
+        <div class="section-header">
+            <h2>Recent Transactions</h2>
+            <a href="{{ url_for('transactions_page') }}" class="btn btn-link">View All →</a>
+        </div>
+        
+        {% if transactions %}
+        <div class="transaction-table-wrapper">
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trans in transactions %}
+                    <tr>
+                        <td>{{ trans.transaction_date.split('.')[0] if '.' in trans.transaction_date else trans.transaction_date }}</td>
+                        <td>
+                            <span class="badge badge-{{ 'success' if trans.type == 'credit' else 'danger' }}">
+                                {{ '🟢 Credit' if trans.type == 'credit' else '🔴 Debit' }}
+                            </span>
+                        </td>
+                        <td>{{ trans.category }}</td>
+                        <td class="amount-{{ trans.type }}">{{ currency }} {{ "{:,.2f}".format(trans.amount) }}</td>
+                        <td class="reason-cell">{{ trans.reason or '-' }}</td>
+                        <td class="balance-cell">{{ currency }} {{ "{:,.2f}".format(trans.balance_after) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No transactions yet. Start by adding your first transaction!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Transaction Modal -->
+<div id="addTransactionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Transaction</h2>
+            <span class="close" onclick="closeAddTransactionModal()">&times;</span>
+        </div>
+        
+        <form method="POST" action="{{ url_for('add_transaction_route') }}" class="transaction-form">
+            <div class="form-group">
+                <label>Type</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="type" value="credit" id="typeCredit" required>
+                        <span>Credit (Money In)</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="type" value="debit" id="typeDebit" required>
+                        <span>Debit (Money Out)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="amount">Amount ({{ currency }})</label>
+                <input type="number" id="amount" name="amount" step="0.01" min="0.01" required 
+                       placeholder="Enter amount">
+            </div>
+            
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="">Select Category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="reason">Reason / Description</label>
+                <input type="text" id="reason" name="reason" placeholder="Optional description">
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddTransactionModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Transaction</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddTransactionModal(type = null) {
+    document.getElementById('addTransactionModal').style.display = 'block';
+    if (type === 'credit') {
+        document.getElementById('typeCredit').checked = true;
+    } else if (type === 'debit') {
+        document.getElementById('typeDebit').checked = true;
+    }
+}
+
+function closeAddTransactionModal() {
+    document.getElementById('addTransactionModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('addTransactionModal');
+    if (event.target == modal) {
+        closeAddTransactionModal();
+    }
+}
+</script>
+{% endblock %}

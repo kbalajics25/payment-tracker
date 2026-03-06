@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions - Payment Tracker{% endblock %}
+
+{% block content %}
+<div class="transactions-container">
+    <div class="page-header">
+        <h1>All Transactions</h1>
+        <button class="btn btn-primary" onclick="openAddTransactionModal()">+ Add Transaction</button>
+    </div>
+    
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+        <h3>🔍 Filter Transactions</h3>
+        <form method="GET" action="{{ url_for('transactions_page') }}" class="filter-form">
+            <div class="filter-row">
+                <div class="form-group">
+                    <label for="date_from">From Date</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ filters.date_from or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="date_to">To Date</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ filters.date_to or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Type</label>
+                    <div class="radio-group-inline">
+                        <label class="radio-label-inline">
+                            <input type="radio" name="type" value="both" {% if not filters.type or filters.type == 'both' %}checked{% endif %}>
+                            <span>Both</span>
+                        </label>
+                        <label class="radio-label-inline">
+                            <input type="radio" name="type" value="credit" {% if filters.type == 'credit' %}checked{% endif %}>
+                            <span>Credit</span>
+                        </label>
+                        <label class="radio-label-inline">
+                            <input type="radio" name="type" value="debit" {% if filters.type == 'debit' %}checked{% endif %}>
+                            <span>Debit</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-row">
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="min_amount">Min Amount ({{ currency }})</label>
+                    <input type="number" id="min_amount" name="min_amount" step="0.01" 
+                           placeholder="Min" value="{{ filters.min_amount or '' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label for="max_amount">Max Amount ({{ currency }})</label>
+                    <input type="number" id="max_amount" name="max_amount" step="0.01" 
+                           placeholder="Max" value="{{ filters.max_amount or '' }}">
+                </div>
+            </div>
+            
+            <div class="filter-row">
+                <div class="form-group form-group-full">
+                    <label for="search">Search in Reason</label>
+                    <input type="text" id="search" name="search" placeholder="Search by reason..." 
+                           value="{{ filters.search or '' }}">
+                </div>
+            </div>
+            
+            <div class="filter-actions">
+                <a href="{{ url_for('transactions_page') }}" class="btn btn-secondary">Clear Filters</a>
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Results Summary -->
+    <div class="results-summary">
+        <p>Showing {{ transactions|length }} of {{ total_count }} transactions</p>
+    </div>
+    
+    <!-- Transactions Table -->
+    {% if transactions %}
+    <div class="transaction-table-wrapper">
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Reason</th>
+                    <th>Balance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trans in transactions %}
+                <tr>
+                    <td>{{ trans.transaction_date.split('.')[0] if '.' in trans.transaction_date else trans.transaction_date }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'success' if trans.type == 'credit' else 'danger' }}">
+                            {{ '🟢 Credit' if trans.type == 'credit' else '🔴 Debit' }}
+                        </span>
+                    </td>
+                    <td>{{ trans.category }}</td>
+                    <td class="amount-{{ trans.type }}">{{ currency }} {{ "{:,.2f}".format(trans.amount) }}</td>
+                    <td class="reason-cell">{{ trans.reason or '-' }}</td>
+                    <td class="balance-cell">{{ currency }} {{ "{:,.2f}".format(trans.balance_after) }}</td>
+                    <td class="actions-cell">
+                        <a href="{{ url_for('edit_transaction_route', id=trans.id) }}" class="btn-icon" title="Edit">✏️</a>
+                        <form method="POST" action="{{ url_for('delete_transaction_route', id=trans.id) }}" 
+                              style="display: inline;" onsubmit="return confirm('Are you sure? This will recalculate your balance.');">
+                            <button type="submit" class="btn-icon" title="Delete">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="?page={{ page - 1 }}{% for key, value in filters.items() if key != 'page' %}&{{ key }}={{ value }}{% endfor %}" 
+           class="btn btn-secondary">← Previous</a>
+        {% endif %}
+        
+        <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+        
+        {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}{% for key, value in filters.items() if key != 'page' %}&{{ key }}={{ value }}{% endfor %}" 
+           class="btn btn-secondary">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <p>No transactions found matching your filters.</p>
+        <a href="{{ url_for('transactions_page') }}" class="btn btn-secondary">Clear Filters</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Transaction Modal (same as dashboard) -->
+<div id="addTransactionModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add New Transaction</h2>
+            <span class="close" onclick="closeAddTransactionModal()">&times;</span>
+        </div>
+        
+        <form method="POST" action="{{ url_for('add_transaction_route') }}" class="transaction-form">
+            <div class="form-group">
+                <label>Type</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="type" value="credit" id="typeCredit" required>
+                        <span>Credit (Money In)</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="type" value="debit" id="typeDebit" required>
+                        <span>Debit (Money Out)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="amount">Amount ({{ currency }})</label>
+                <input type="number" id="amount" name="amount" step="0.01" min="0.01" required 
+                       placeholder="Enter amount">
+            </div>
+            
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="">Select Category</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="reason">Reason / Description</label>
+                <input type="text" id="reason" name="reason" placeholder="Optional description">
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeAddTransactionModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Transaction</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddTransactionModal() {
+    document.getElementById('addTransactionModal').style.display = 'block';
+}
+
+function closeAddTransactionModal() {
+    document.getElementById('addTransactionModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('addTransactionModal');
+    if (event.target == modal) {
+        closeAddTransactionModal();
+    }
+}
+</script>
+{% endblock %}

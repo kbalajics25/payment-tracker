@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Payment Tracker{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="page-header">
+        <h1>Settings</h1>
+    </div>
+    
+    <div class="settings-sections">
+        <!-- Account Information -->
+        <div class="settings-card">
+            <h2>👤 Account Information</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Username:</label>
+                    <span>{{ user.username }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Account Created:</label>
+                    <span>{{ user.created_at.split(' ')[0] if user.created_at else 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Backup & Restore -->
+        <div class="settings-card">
+            <h2>💾 Backup & Restore</h2>
+            <p>Create a backup of your database to protect your data.</p>
+            <form method="POST" action="{{ url_for('create_backup') }}">
+                <button type="submit" class="btn btn-primary">Create Backup Now</button>
+            </form>
+            <br>
+            <p class="help-text">
+                Backups are stored in the <code>backups/</code> folder. 
+                Keep these files safe and back them up to external storage regularly.
+            </p>
+        </div>
+        
+        <!-- Data Information -->
+        <div class="settings-card">
+            <h2>📊 Data Information</h2>
+            <p>All your financial data is stored locally on your device in <code>database.db</code></p>
+            <ul class="info-list">
+                <li>✅ No cloud storage - complete privacy</li>
+                <li>✅ No external APIs - works offline</li>
+                <li>✅ You own 100% of your data</li>
+                <li>✅ SQLite database - portable and reliable</li>
+            </ul>
+        </div>
+        
+        <!-- Help & Support -->
+        <div class="settings-card">
+            <h2>❓ Help & Support</h2>
+            <h3>How to access from mobile:</h3>
+            <ol>
+                <li>Ensure your mobile device is on the same WiFi network</li>
+                <li>Find your computer's IP address:
+                    <ul>
+                        <li>Windows: Run <code>ipconfig</code> in Command Prompt</li>
+                        <li>Mac/Linux: Run <code>ifconfig</code> in Terminal</li>
+                    </ul>
+                </li>
+                <li>On your mobile browser, go to: <code>http://YOUR_IP:5000</code></li>
+            </ol>
+            
+            <h3>Security Tips:</h3>
+            <ul>
+                <li>Use a strong password</li>
+                <li>Create regular backups</li>
+                <li>Only access on trusted networks</li>
+                <li>Keep your computer secure</li>
+            </ul>
+        </div>
+        
+        <!-- About -->
+        <div class="settings-card">
+            <h2>ℹ️ About</h2>
+            <p><strong>Personal Payment Tracker</strong></p>
+            <p>Version 1.0</p>
+            <p>A privacy-focused, offline-first financial tracking application.</p>
+            <p>Built with Flask, SQLite, and vanilla JavaScript.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.settings-sections {
+    display: grid;
+    gap: 20px;
+}
+
+.settings-card {
+    background: white;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.settings-card h2 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.4em;
+}
+
+.settings-card h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #555;
+    font-size: 1.1em;
+}
+
+.info-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #555;
+}
+
+.info-list {
+    list-style: none;
+    padding: 0;
+}
+
+.info-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.info-list li:last-child {
+    border-bottom: none;
+}
+
+.help-text {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+code {
+    background: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    color: #d63384;
+}
+
+ol, ul {
+    margin-left: 20px;
+}
+
+ol li, ul li {
+    margin: 5px 0;
+}
+</style>
+{% endblock %}
